@@ -17,6 +17,7 @@ public class Main {
         HttpGet httpGet = new HttpGet("https://sina.cn/");
         try (CloseableHttpResponse response1 = httpclient.execute(httpGet)) {
             System.out.println(response1.getStatusLine());
+//            测试
             HttpEntity entity1 = response1.getEntity();
             System.out.println(EntityUtils.toString(entity1));
 
