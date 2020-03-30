@@ -12,6 +12,7 @@ import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,27 +22,67 @@ import java.util.regex.Pattern;
 
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        List<String> linkPool = new ArrayList<>();
-        Set<String> usedLinks = new HashSet<>();
-        linkPool.add("https://sina.cn/");
+    private static List<String> loadLinksFromDB(Connection connection, String sql) throws SQLException {
+        List<String> result = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                result.add(resultSet.getString(1));
+            }
+        }
+        return result;
+    }
+
+    public static void main(String[] args) throws IOException, SQLException {
+        Connection connection = DriverManager.getConnection(
+                "jdbc:h2:file:D:/JAVA/IdeaProjects/Elasticsearch/news",
+                "root", "hello123");
+
+
         while (true) {
+            //待处理的池子
+            //从数据库加载即将处理的链接的代码
+            List<String> linkPool = loadLinksFromDB(connection, "select link from unprocessed_links");
+
+            //已处理的池子
+            //从数据库加载已处理的代码
+            Set<String> usedLinks = new HashSet<>(
+                    loadLinksFromDB(connection, "select link from processed_links"));
             if (linkPool.isEmpty()) {
                 break;
             }
             //ArrayList从尾部删除更有效率
+            //每次处理完成都要更新数据库
             String link = linkPool.remove(linkPool.size() - 1);
+            //删除未使用表中对应的网址
+            deleteLinkFromDB(connection, "delete from PUBLIC.UNPROCESSED_LINKS where LINK = ?", link);
             if (usedLinks.contains(link)) {
                 continue;
             }
+
             if (isInterestingLink(link)) {
                 Document doc = httpGetAndParseHtml(link);
                 doc.select("a").stream().map(aTag -> aTag.attr("href")).forEach(linkPool::add);
                 storeIntoDBwhileNews(doc);
                 usedLinks.add(link);
+                addLinkIntoDB(connection, link, "insert into PROCESSED_LINKS(LINK) values (?)");
+
             }
         }
+
     }
+
+    private static void addLinkIntoDB(Connection connection, String link, String s) {
+
+    }
+
+    private static void deleteLinkFromDB(Connection connection, String sql, String link) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(0, link);
+            statement.executeQuery();
+        }
+    }
+
 
     private static void storeIntoDBwhileNews(Document doc) {
         //如果是新闻详情页面就存入数据库，否则不做
@@ -78,7 +119,6 @@ public class Main {
         link = encodeContainsChineseUrl(link);
         return link;
     }
-
 
     private static boolean isInterestingLink(String link) {
         return (isNewsPage(link) || isIndexPage(link)) &&
