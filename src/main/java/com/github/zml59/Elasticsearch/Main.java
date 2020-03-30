@@ -1,5 +1,6 @@
 package com.github.zml59.Elasticsearch;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -12,34 +13,98 @@ import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        List<String> linkPool = new ArrayList<>();
-        Set<String> usedLinks = new HashSet<>();
-        linkPool.add("https://sina.cn/");
+    private static final String USER_NAME = "root";
+    private static final String PASSWORD = "hello123";
+
+    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
+    public static void main(String[] args) throws IOException, SQLException {
+        Connection connection = DriverManager.getConnection(
+                "jdbc:h2:file:D:/JAVA/IdeaProjects/Elasticsearch/news",
+                USER_NAME, PASSWORD);
+
         while (true) {
+            //待处理的池子
+            //从数据库加载即将处理的链接的代码
+            List<String> linkPool = loadLinksFromDB(connection, "select link from unprocessed_links");
+
             if (linkPool.isEmpty()) {
                 break;
             }
-            //ArrayList从尾部删除更有效率
+            //选取一个待处理网址
+            //删除未使用表中对应的网址
             String link = linkPool.remove(linkPool.size() - 1);
-            if (usedLinks.contains(link)) {
+            insertLinkIntoDB(connection, link, "delete from UNPROCESSED_LINKS where LINK = ?");
+
+
+            if (isLinkUsed(connection, link)) {
                 continue;
             }
+
             if (isInterestingLink(link)) {
                 Document doc = httpGetAndParseHtml(link);
-                doc.select("a").stream().map(aTag -> aTag.attr("href")).forEach(linkPool::add);
+                //爬取页面中的连接并加入到未处理表
+                parseUrlsFromPageAndStoreIntoDB(connection, doc);
+
                 storeIntoDBwhileNews(doc);
-                usedLinks.add(link);
+                //把处理过的网址加入到已处理表
+                insertLinkIntoDB(connection, link, "insert into PROCESSED_LINKS(LINK) values ( ? )");
             }
+        }
+    }
+
+    private static List<String> loadLinksFromDB(Connection connection, String sql) throws SQLException {
+        ResultSet resultSet = null;
+        List<String> result = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                result.add(resultSet.getString(1));
+            }
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+        }
+        return result;
+    }
+
+    private static void parseUrlsFromPageAndStoreIntoDB(Connection connection, Document doc) throws SQLException {
+        for (Element aTag : doc.select("a")) {
+            String href = aTag.attr("href");
+            //把爬取的网址加入到未处理表
+            insertLinkIntoDB(connection, href, "insert into UNPROCESSED_LINKS(LINK) values ( ? )");
+        }
+    }
+
+    //询问数据库当前连接是否已经处理
+    private static boolean isLinkUsed(Connection connection, String link) throws SQLException {
+        ResultSet res = null;
+        try (PreparedStatement statement = connection.prepareStatement("SELECT LINK FROM processed_links WHERE LINK = ? ")) {
+            statement.setString(1, link);
+            res = statement.executeQuery();
+            while (res.next()) {
+                return true;
+            }
+        } finally {
+            if (res != null) {
+                res.close();
+            }
+        }
+        return false;
+    }
+
+    private static void insertLinkIntoDB(Connection connection, String link, String sql) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, link);
+            statement.executeUpdate();
         }
     }
 
@@ -78,7 +143,6 @@ public class Main {
         link = encodeContainsChineseUrl(link);
         return link;
     }
-
 
     private static boolean isInterestingLink(String link) {
         return (isNewsPage(link) || isIndexPage(link)) &&
