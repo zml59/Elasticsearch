@@ -39,10 +39,26 @@ public class JdbcCrawlerDAO implements CrawlerDAO {
     }
 
     //把一个网址相对于数据库做删除/新增/更新操作。
-    public void updateDB(String link, String sql) throws SQLException {
+    private void updateDB(String link, String sql) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, link);
             statement.executeUpdate();
+        }
+    }
+
+    public void insertUsedLink(String link) {
+        try {
+            updateDB(link, "insert into PROCESSED_LINKS(LINK) values ( ? )");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void insertUnusedLink(String link) {
+        try {
+            updateDB(link, "insert into UNPROCESSED_LINKS(LINK) values ( ? )");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 

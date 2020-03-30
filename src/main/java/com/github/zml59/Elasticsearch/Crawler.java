@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 public class Crawler {
 
-    CrawlerDAO dao = new JdbcCrawlerDAO();
+    CrawlerDAO dao = new MyBatisCrawlerDAO();
 
     public void run() throws SQLException, IOException {
         String link;
@@ -41,7 +41,8 @@ public class Crawler {
 
                 storeIntoDBwhileNews(doc, link);
                 //把处理过的网址加入到已处理表
-                dao.updateDB(link, "insert into PROCESSED_LINKS(LINK) values ( ? )");
+                dao.insertUsedLink(link);
+
             }
         }
     }
@@ -57,7 +58,7 @@ public class Crawler {
             String href = aTag.attr("href");
             //把爬取的网址加入到未处理表
             if (isInterestingLink(href)) {
-                dao.updateDB(href, "insert into UNPROCESSED_LINKS(LINK) values ( ? )");
+                dao.insertUnusedLink(href);
             }
         }
     }
