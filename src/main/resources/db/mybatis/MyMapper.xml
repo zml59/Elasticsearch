@@ -26,14 +26,14 @@
     <insert id="insertLink"
             parameterType="HashMap">
         insert into
-<choose>
-    <when test="tableName == 'processed_links'">
-        processed_links
-    </when>
-    <when test="tableName == 'unprocessed_links'">
-        unprocessed_links
-    </when>
-</choose>
-(LINK) values ( #{LINK} )
-        </insert>
+        <choose>
+            <when test="tableName == 'processed_links'">
+                processed_links
+            </when>
+            <otherwise>
+                unprocessed_links
+            </otherwise>
+        </choose>
+        (LINK) values ( #{LINK} )
+    </insert>
 </mapper>
