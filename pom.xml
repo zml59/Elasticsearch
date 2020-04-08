@@ -24,7 +24,7 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>RELEASE</version>
-            <scope>compile</scope>
+            <scope>1.4.199</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -52,6 +52,16 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>annotations</artifactId>
             <version>3.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.19</version>
         </dependency>
     </dependencies>
 
@@ -103,11 +113,29 @@
                     </execution>
                 </executions>
                 <dependencies>
-                    <!-- overwrite dependency on spotbugs if you want to specify the version of spotbugs -->
                     <dependency>
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs</artifactId>
                         <version>4.0.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>6.3.2</version>
+                <configuration>
+                    <url>jdbc:mysql://192.168.99.100:3306/news</url>
+<!--                    <url>jdbc:h2:file:D:/JAVA/IdeaProjects/Elasticsearch/news</url>-->
+                    <user>root</user>
+                    <password>hello123</password>
+
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.h2database</groupId>
+                        <artifactId>h2</artifactId>
+                        <version>1.4.199</version>
                     </dependency>
                 </dependencies>
             </plugin>
