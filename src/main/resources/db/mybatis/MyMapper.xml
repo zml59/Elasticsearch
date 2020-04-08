@@ -10,17 +10,17 @@
     </select>
     <delete id="deleteLink" parameterType="String">
         delete
-        from UNPROCESSED_LINKS
-        where LINK = #{link}
+        from unprocessed_links
+        where link = #{link}
     </delete>
     <insert id="insertNews"
             parameterType="com.github.zml59.Elasticsearch.News">
-        insert into NEWS(title, content, url, create_at, update_at)
+        insert into news(title, content, url, create_at, update_at)
         values (#{title}, #{content}, #{url}, now(), now())
     </insert>
     <select id="isLinkUsed" parameterType="String" resultType="int">
         select count(link)
-        from PROCESSED_LINKS
+        from processed_links
         where link = #{link}
     </select>
     <insert id="insertLink"
@@ -34,6 +34,6 @@
                 unprocessed_links
             </otherwise>
         </choose>
-        (LINK) values ( #{LINK} )
+        (link) values ( #{link} )
     </insert>
 </mapper>

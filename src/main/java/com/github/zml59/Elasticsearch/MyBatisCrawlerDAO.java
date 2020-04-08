@@ -59,7 +59,7 @@ public class MyBatisCrawlerDAO implements CrawlerDAO {
         param.put("tableName", "unprocessed_links");
         param.put("link", link);
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
-            session.insert("com.github.MyMapper.insertLink", link);
+            session.insert("com.github.MyMapper.insertLink", param);
         }
     }
 
@@ -69,7 +69,7 @@ public class MyBatisCrawlerDAO implements CrawlerDAO {
         param.put("tableName", "processed_links");
         param.put("link", link);
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
-            session.insert("com.github.MyMapper.insertLink", link);
+            session.insert("com.github.MyMapper.insertLink", param);
         }
     }
 

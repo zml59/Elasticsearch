@@ -3,8 +3,8 @@ id bigint primary key auto_increment,
 title text,
 content text,
 url varchar(1000),
-create_at timestamp,
-update_at timestamp,
+create_at timestamp default now(),
+update_at timestamp default now()
 );
 
 create table unprocessed_links(
