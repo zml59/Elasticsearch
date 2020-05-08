@@ -1,10 +1,14 @@
 package com.github.zml59.Elasticsearch;
 
+import java.time.Instant;
+
 public class News {
     private Integer id;
     private String title;
     private String content;
     private String url;
+    private Instant createAt;
+    private Instant updateAt;
 
     public News(String title, String content, String link) {
         this.title = title;
@@ -12,6 +16,21 @@ public class News {
         this.url = link;
     }
 
+    public Instant getCreateAt() {
+        return createAt;
+    }
+
+    public void setCreateAt(Instant createAt) {
+        this.createAt = createAt;
+    }
+
+    public Instant getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(Instant updateAt) {
+        this.updateAt = updateAt;
+    }
 
     public String getTitle() {
         return title;
