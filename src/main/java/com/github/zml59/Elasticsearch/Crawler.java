@@ -1,6 +1,5 @@
 package com.github.zml59.Elasticsearch;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -20,38 +19,40 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
-public class Crawler {
+public class Crawler extends Thread {
+    CrawlerDAO dao;
 
-    CrawlerDAO dao = new MyBatisCrawlerDAO();
+    public Crawler(CrawlerDAO dao) {
+        this.dao = dao;
+    }
 
-    public void run() throws SQLException, IOException {
-        String link;
+    @Override
+    public void run() {
+        try {
+            String link;
 
-        while ((link = dao.getOneLinkThenDelete()) != null) {
+            while ((link = dao.getOneLinkThenDelete()) != null) {
 
-            //网址是否已经处理
-            if (dao.isLinkUsed(link)) {
-                continue;
+                //网址是否已经处理
+                if (dao.isLinkUsed(link)) {
+                    continue;
+                }
+
+                if (isInterestingLink(link) || isIndexPage(link)) {
+                    Document doc = httpGetAndParseHtml(link);
+                    //爬取页面中的连接并加入到未处理表
+                    parseUrlsFromPageAndStoreIntoDB(doc);
+
+                    storeIntoDBwhileNews(doc, link);
+                    //把处理过的网址加入到已处理表
+                    dao.insertUsedLink(link);
+
+                }
             }
-
-            if (isInterestingLink(link) || isIndexPage(link)) {
-                Document doc = httpGetAndParseHtml(link);
-                //爬取页面中的连接并加入到未处理表
-                parseUrlsFromPageAndStoreIntoDB(doc);
-
-                storeIntoDBwhileNews(doc, link);
-                //把处理过的网址加入到已处理表
-                dao.insertUsedLink(link);
-
-            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
-
-    @SuppressFBWarnings("DMI_CONSTANT_DB_PASSWORD")
-    public static void main(String[] args) throws IOException, SQLException {
-        new Crawler().run();
-    }
-
 
     private void parseUrlsFromPageAndStoreIntoDB(Document doc) throws SQLException {
         for (Element aTag : doc.select("a")) {
